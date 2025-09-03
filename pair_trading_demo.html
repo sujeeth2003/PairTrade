@@ -167,3 +167,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13
 .sig-short{background:rgba(255,77,109,0.15);color:var(--red);border:1px solid rgba(255,77,109,0.3);}
 .sig-none {background:rgba(255,209,102,0.1);color:var(--yellow);border:1px solid rgba(255,209,102,0.2);}
 
+.pred-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 20px;background:var(--bg3);border-top:1px solid var(--border);font-size:11px;}
+.pred-step{background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:4px 10px;color:var(--muted);}
+.pred-step.lit{border-color:var(--accent);color:var(--accent);}
+.pred-arrow{color:var(--dim);}
+
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:400px;gap:12px;color:var(--muted);}
+.empty-icon{font-size:42px;opacity:0.25;}
+.empty-text{font-family:var(--head);font-size:15px;font-weight:700;}
+.empty-sub{font-size:11px;text-align:center;max-width:280px;line-height:1.7;color:var(--dim);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-block">
+    <div class="logo">PAIR<span>.</span>TRADE<span> /</span> DEMO</div>
+    <div class="subtitle">Cointegrated Pair · OLS Spread · Z-Score · Signal Pipeline</div>
+  </div>
+  <button class="run-btn" id="runBtn" onclick="runPipeline()">&#9654; RUN PIPELINE</button>
+</div>
+
