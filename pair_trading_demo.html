@@ -269,3 +269,27 @@ def generate_pair(n, beta, mean_spread, vol, drift, seed):
                     + theta*(mean_spread - spread[t-1])
                     + noise)
 
+    # Stock A: beta * B + spread
+    A = beta * B + spread
+    return A, B, spread
+
+A, B, true_spread = generate_pair(
+    N_DAYS, TRUE_BETA, MEAN_SPREAD, SPREAD_VOL, DRIFT, SEED
+)</textarea>
+      </div>
+      <div class="block-out" id="out1"></div>
+    </div>
+
+    <!-- BLOCK 2: OLS -->
+    <div class="block" id="block2">
+      <div class="block-header">
+        <div class="block-num">2</div>
+        <div class="block-title">OLS Regression — Estimate Hedge Ratio beta</div>
+        <span class="block-tag tag-stat">STAT</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code2" rows="21" spellcheck="false"># ── OLS: A = alpha + beta * B + epsilon ───────
+# Ordinary Least Squares to estimate the hedge
+# ratio. We regress A on B to find how many units
+# of B perfectly hedge one unit of A.
+
