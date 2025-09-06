@@ -329,3 +329,21 @@ alpha_hat, beta_hat, residuals, r2 = ols_regression(A, B)</textarea>
 # A cointegrated pair has a STATIONARY spread
 # (mean-reverting) → this is what we trade!
 
+def compute_spread(A, B, alpha, beta):
+    predicted_A = alpha + beta * B
+    spread      = A - predicted_A
+    return spread, predicted_A
+
+spread, predicted_A = compute_spread(
+    A, B, alpha_hat, beta_hat
+)
+
+# Rolling 30-day spread mean
+window = 30
+spread_mean = np.convolve(
+    spread, np.ones(window)/window, mode='same'
+)</textarea>
+      </div>
+      <div class="block-out" id="out3"></div>
+    </div>
+
