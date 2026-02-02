@@ -378,3 +378,21 @@ Z_WINDOW = 60  # lookback bars used</textarea>
       <div class="block-out" id="out4"></div>
     </div>
 
+    <!-- BLOCK 5: SIGNALS -->
+    <div class="block" id="block5">
+      <div class="block-header">
+        <div class="block-num">5</div>
+        <div class="block-title">Signal Generation</div>
+        <span class="block-tag tag-sig">SIGNAL</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code5" rows="28" spellcheck="false"># ── TRADING SIGNALS ───────────────────────────
+# LONG  spread (+1): z < -ENTRY -> buy A, sell B
+# SHORT spread (-1): z > +ENTRY -> sell A, buy B
+# FLAT         ( 0): no position
+#
+# Entry/exit with hysteresis (avoids overtrading):
+#   |z| > ENTRY_Z -> enter trade
+#   |z| < EXIT_Z  -> exit / take profit
+#   |z| > STOP_Z  -> stop-loss (forced exit)
+
