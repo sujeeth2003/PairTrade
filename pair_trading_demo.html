@@ -663,3 +663,31 @@ function rollingZscore(spread,win=60){
   return z;
 }
 
+function generateSignals(z,entry,exitZ,stop){
+  const pos=new Int8Array(z.length);let active=0;
+  for(let i=1;i<z.length;i++){
+    const az=Math.abs(z[i]);
+    if(active===0){if(z[i]<-entry)active=1;else if(z[i]>entry)active=-1;}
+    else{if(az<exitZ)active=0;if(az>stop)active=0;}
+    pos[i]=active;
+  }
+  return pos;
+}
+
+function predictCurrent(A,B,alphaH,betaH,entry,exitZ,stop,zWin=60){
+  const n=A.length,aNow=A[n-1],bNow=B[n-1];
+  const sNow=aNow-(alphaH+betaH*bNow);
+  const hist=[];
+  for(let i=Math.max(0,n-zWin);i<n;i++) hist.push(A[i]-(alphaH+betaH*B[i]));
+  const mu=hist.reduce((a,b)=>a+b,0)/hist.length;
+  const sig=Math.sqrt(hist.reduce((a,v)=>a+(v-mu)**2,0)/hist.length);
+  const zNow=sig>1e-9?(sNow-mu)/sig:0;
+  const az=Math.abs(zNow);
+  let action='HOLD';
+  if(zNow<-entry) action='LONG SPREAD';
+  else if(zNow>entry) action='SHORT SPREAD';
+  else if(az<exitZ) action='EXIT / FLAT';
+  if(az>stop) action='STOP-LOSS';
+  return{aNow,bNow,sNow,zNow,action};
+}
+
