@@ -508,3 +508,27 @@ a_now, b_now, spread_now, z_now, action = predict_current(
       </div>
     </div>
 
+    <!-- VIZ 3 -->
+    <div class="viz-section" id="viz3">
+      <div class="viz-header">
+        <div class="viz-title">&#9315; Spread = A &#8722; (&#945; + &#946;&#183;B)</div>
+        <div class="viz-subtitle">OLS residuals — stationary mean-reverting series</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap"><canvas id="spreadChart"></canvas></div>
+        <div class="stats-row" id="spreadStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 4 -->
+    <div class="viz-section" id="viz4">
+      <div class="viz-header">
+        <div class="viz-title">&#9316; Rolling Z-Score (60-day window)</div>
+        <div class="viz-subtitle">Normalised spread deviation with entry/exit thresholds</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="zscoreChart"></canvas></div>
+        <div class="stats-row" id="zStats"></div>
+      </div>
+    </div>
+
