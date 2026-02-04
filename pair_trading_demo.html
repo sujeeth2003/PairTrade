@@ -716,3 +716,30 @@ function showViz(id){
 }
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
+let pipeData={};
+
+// ══════════════════════════════════════════
+//  PIPELINE RUNNER
+// ══════════════════════════════════════════
+async function runPipeline(){
+  const btn=document.getElementById('runBtn');
+  btn.classList.add('running');btn.textContent='... Running';
+  document.getElementById('emptyState').style.display='none';
+
+  // hide all viz
+  document.querySelectorAll('.viz-section').forEach(e=>{e.classList.remove('visible','shown');});
+
+  const steps=[step0,step1,step2,step3,step4,step5,step6];
+  for(let i=0;i<steps.length;i++){
+    setPipe(i,'active');
+    await delay(i===0?80:300);
+    steps[i]();
+    setPipe(i,'done');
+  }
+  btn.classList.remove('running');btn.textContent='&#8635; RE-RUN';
+}
+function setPipe(i,cls){
+  document.getElementById('ps'+i).className='pipe-step '+cls;
+  if(cls==='done') document.getElementById('block'+i).className='block done-block';
+}
+
