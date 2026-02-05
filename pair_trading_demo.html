@@ -758,3 +758,26 @@ function step0(){
   showViz(0);
 }
 
+function step1(){
+  const c=pipeData.cfg;
+  const{A,B,trueSpread}=generatePair(c.N_DAYS||500,c.TRUE_BETA||1.4,c.MEAN_SPREAD||2.0,c.SPREAD_VOL||0.6,c.DRIFT||0.00008,c.SEED||42);
+  pipeData.A=A;pipeData.B=B;pipeData.trueSpread=trueSpread;
+  const n=A.length;const R=pearsonR(A,B);
+  setOut(1,`Generated ${n} days | A_final=${A[n-1].toFixed(2)}  B_final=${B[n-1].toFixed(2)}  Pearson_r=${R.toFixed(4)}`);
+  const labels=Array.from({length:n},(_,i)=>i);
+  dChart('priceChart');
+  charts['priceChart']=new Chart(document.getElementById('priceChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'A',data:Array.from(A),borderColor:CC.accent,backgroundColor:'transparent',borderWidth:1.8,pointRadius:0,tension:0.3},
+      {label:'B',data:Array.from(B),borderColor:CC.purple,backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:0.3},
+    ]},
+    options:{...baseOpts()},
+  });
+  document.getElementById('priceStats').innerHTML=chips([
+    {l:'A Final',v:A[n-1].toFixed(2),cls:'acc'},{l:'B Final',v:B[n-1].toFixed(2)},
+    {l:'Corr(A,B)',v:R.toFixed(4),cls:'pos'},{l:'A/B Ratio',v:(A[n-1]/B[n-1]).toFixed(3),cls:'yel'},
+  ]);
+  showViz(1);
+}
+
