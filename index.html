@@ -226,3 +226,17 @@ TICKER_B    = "STOCK_B"
 N_DAYS      = 500          # trading days
 SEED        = 42           # reproducibility
 
+# ── COINTEGRATION PARAMETERS ─────────────────
+TRUE_BETA   = 1.4          # true hedge ratio
+MEAN_SPREAD = 2.0          # long-run equilibrium
+SPREAD_VOL  = 0.6          # spread noise
+DRIFT       = 0.00008      # tiny drift in B
+
+# ── SIGNAL THRESHOLDS ────────────────────────
+ENTRY_Z     = 1.8          # open at |z| > entry
+EXIT_Z      = 0.4          # close at |z| < exit
+STOP_Z      = 3.5          # stop-loss at |z| > stop</textarea>
+      </div>
+      <div class="block-out" id="out0"></div>
+    </div>
+
