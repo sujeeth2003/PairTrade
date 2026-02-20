@@ -255,3 +255,17 @@ STOP_Z      = 3.5          # stop-loss at |z| > stop</textarea>
 def generate_pair(n, beta, mean_spread, vol, drift, seed):
     rng = np.random.default_rng(seed)
 
+    # Stock B: geometric random walk with drift
+    b_returns = rng.normal(drift, 0.012, n)
+    B = 100 * np.exp(np.cumsum(b_returns))
+
+    # Mean-reverting spread (Ornstein-Uhlenbeck)
+    spread = np.zeros(n)
+    spread[0] = mean_spread
+    theta = 0.08       # mean-reversion speed
+    for t in range(1, n):
+        noise = rng.normal(0, vol)
+        spread[t] = (spread[t-1]
+                    + theta*(mean_spread - spread[t-1])
+                    + noise)
+
