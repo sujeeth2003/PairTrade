@@ -310,3 +310,22 @@ def ols_regression(A, B):
     r2     = 1 - ss_res / ss_tot
     return alpha_hat, beta_hat, residuals, r2
 
+alpha_hat, beta_hat, residuals, r2 = ols_regression(A, B)</textarea>
+      </div>
+      <div class="block-out" id="out2"></div>
+    </div>
+
+    <!-- BLOCK 3: SPREAD -->
+    <div class="block" id="block3">
+      <div class="block-header">
+        <div class="block-num">3</div>
+        <div class="block-title">Spread Calculation</div>
+        <span class="block-tag tag-stat">STAT</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code3" rows="16" spellcheck="false"># ── SPREAD = A - (alpha + beta * B) ──────────
+# The spread is the OLS residual — difference
+# between actual A and the B-predicted A.
+# A cointegrated pair has a STATIONARY spread
+# (mean-reverting) → this is what we trade!
+
