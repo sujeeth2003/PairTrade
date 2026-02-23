@@ -431,3 +431,17 @@ positions, _ = generate_signals(
 # Evaluate the latest bar through the full pipeline
 # to generate the current trade recommendation.
 
+def predict_current(A, B, alpha, beta,
+                    entry, exit_z, stop, z_win=60):
+    a_now = A[-1]
+    b_now = B[-1]
+
+    # Current spread
+    spread_now  = a_now - (alpha + beta * b_now)
+
+    # Rolling z-score (only uses past data)
+    spread_hist = A - (alpha + beta * B)
+    mu   = np.mean(spread_hist[-z_win:])
+    sig  = np.std( spread_hist[-z_win:])
+    z_now = (spread_now - mu) / sig if sig > 1e-9 else 0
+
