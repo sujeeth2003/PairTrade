@@ -412,3 +412,22 @@ def generate_signals(z, entry, exit_z, stop):
         pos[i] = active
     return pos
 
+positions, _ = generate_signals(
+    z_score, ENTRY_Z, EXIT_Z, STOP_Z
+), None</textarea>
+      </div>
+      <div class="block-out" id="out5"></div>
+    </div>
+
+    <!-- BLOCK 6: PREDICTION -->
+    <div class="block" id="block6">
+      <div class="block-header">
+        <div class="block-num">6</div>
+        <div class="block-title">Current Prediction &amp; Trade Decision</div>
+        <span class="block-tag tag-pred">PREDICT</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code6" rows="24" spellcheck="false"># ── CURRENT STATE -> PREDICTION ───────────────
+# Evaluate the latest bar through the full pipeline
+# to generate the current trade recommendation.
+
