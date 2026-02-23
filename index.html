@@ -445,3 +445,20 @@ def predict_current(A, B, alpha, beta,
     sig  = np.std( spread_hist[-z_win:])
     z_now = (spread_now - mu) / sig if sig > 1e-9 else 0
 
+    # Decision logic
+    az = abs(z_now)
+    if   z_now < -entry:  action = "LONG SPREAD"
+    elif z_now >  entry:  action = "SHORT SPREAD"
+    elif az < exit_z:     action = "EXIT / FLAT"
+    else:                 action = "HOLD"
+    if az > stop:         action = "STOP-LOSS"
+
+    return a_now, b_now, spread_now, z_now, action
+
+a_now, b_now, spread_now, z_now, action = predict_current(
+    A, B, alpha_hat, beta_hat, ENTRY_Z, EXIT_Z, STOP_Z
+)</textarea>
+      </div>
+      <div class="block-out" id="out6"></div>
+    </div>
+
