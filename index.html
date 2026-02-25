@@ -532,3 +532,33 @@ a_now, b_now, spread_now, z_now, action = predict_current(
       </div>
     </div>
 
+    <!-- VIZ 5 -->
+    <div class="viz-section" id="viz5">
+      <div class="viz-header">
+        <div class="viz-title">&#9317; Signal &amp; Position Track</div>
+        <div class="viz-subtitle">Z-score bars coloured by position (green=long, red=short, grey=flat)</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="signalChart"></canvas></div>
+        <div class="stats-row" id="sigStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 6 -->
+    <div class="viz-section" id="viz6">
+      <div class="viz-header">
+        <div class="viz-title">&#9318; Current State &#8594; Prediction</div>
+        <div class="viz-subtitle">End-to-end pipeline output on latest bar</div>
+      </div>
+      <div class="gauge-wrap" id="gaugeWrap">
+        <div class="gauge-label">Current Z-Score</div>
+        <div class="gauge-val" id="gaugeVal">—</div>
+        <div class="gauge-signal" id="gaugeSig">—</div>
+      </div>
+      <div class="flow-diagram" id="predFlow"></div>
+      <div class="viz-body" style="padding-top:0;">
+        <div class="chart-wrap short"><canvas id="recentZChart"></canvas></div>
+      </div>
+      <div class="pred-flow" id="predSteps"></div>
+    </div>
+
