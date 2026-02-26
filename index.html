@@ -600,3 +600,27 @@ function baseOpts(extra={}) {
 let charts={};
 function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
+// ══════════════════════════════════════════
+//  PARSE CONFIG
+// ══════════════════════════════════════════
+function parseConfig(code){
+  const cfg={};
+  code.split('\n').forEach(line=>{
+    const m=line.match(/^([A-Z_]+)\s*=\s*([\d.eE+-]+)/);
+    if(m) cfg[m[1]]=parseFloat(m[2]);
+  });
+  return cfg;
+}
+
+// ══════════════════════════════════════════
+//  SEEDED RNG (Box-Muller)
+// ══════════════════════════════════════════
+function SeededRNG(seed){
+  let s=seed>>>0;
+  this.next=function(){s=(Math.imul(1664525,s)+1013904223)>>>0;return s/4294967296;};
+  this.normal=function(mu=0,sigma=1){
+    const u1=Math.max(this.next(),1e-12),u2=this.next();
+    return mu+sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  };
+}
+
