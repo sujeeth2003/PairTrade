@@ -691,3 +691,28 @@ function predictCurrent(A,B,alphaH,betaH,entry,exitZ,stop,zWin=60){
   return{aNow,bNow,sNow,zNow,action};
 }
 
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length;}
+function std(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length);}
+function pearsonR(A,B){
+  const n=A.length,mA=mean(Array.from(A)),mB=mean(Array.from(B));
+  let num=0,dA=0,dB=0;
+  for(let i=0;i<n;i++){num+=(A[i]-mA)*(B[i]-mB);dA+=(A[i]-mA)**2;dB+=(B[i]-mB)**2;}
+  return num/Math.sqrt(dA*dB);
+}
+function chip(l,v,cls){return`<div class="stat-chip"><div class="sc-label">${l}</div><div class="sc-val ${cls}">${v}</div></div>`;}
+function chips(arr){return arr.map(c=>chip(c.l,c.v,c.cls||'')).join('');}
+function setOut(i,msg,err){
+  const el=document.getElementById('out'+i);
+  el.innerHTML=`<span class="out-label">OUTPUT</span>${msg}`;
+  el.className='block-out visible'+(err?' error':'');
+}
+function showViz(id){
+  const el=document.getElementById('viz'+id);
+  el.classList.add('visible');
+  setTimeout(()=>el.classList.add('shown'),30);
+}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
