@@ -639,3 +639,27 @@ function generatePair(n,beta,meanSpread,vol,drift,seed){
   return {A,B,trueSpread:spread};
 }
 
+function olsRegression(A,B){
+  const n=A.length;
+  let sumB=0,sumA=0,sumBB=0,sumAB=0;
+  for(let i=0;i<n;i++){sumB+=B[i];sumA+=A[i];sumBB+=B[i]*B[i];sumAB+=A[i]*B[i];}
+  const denom=n*sumBB-sumB*sumB;
+  const betaH=(n*sumAB-sumA*sumB)/denom;
+  const alphaH=(sumA-betaH*sumB)/n;
+  const res=new Float64Array(n);
+  let ssTot=0,ssRes=0;const mA=sumA/n;
+  for(let i=0;i<n;i++){res[i]=A[i]-(alphaH+betaH*B[i]);ssRes+=res[i]**2;ssTot+=(A[i]-mA)**2;}
+  return{alphaH,betaH,residuals:res,r2:1-ssRes/ssTot};
+}
+
+function rollingZscore(spread,win=60){
+  const z=new Float64Array(spread.length);
+  for(let i=win;i<spread.length;i++){
+    let mu=0;for(let j=i-win;j<i;j++)mu+=spread[j];mu/=win;
+    let vr=0;for(let j=i-win;j<i;j++)vr+=(spread[j]-mu)**2;
+    const sig=Math.sqrt(vr/win);
+    z[i]=sig>1e-9?(spread[i]-mu)/sig:0;
+  }
+  return z;
+}
+
