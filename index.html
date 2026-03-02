@@ -781,3 +781,32 @@ function step1(){
   showViz(1);
 }
 
+function step2(){
+  const{A,B,cfg}=pipeData;
+  const{alphaH,betaH,residuals,r2}=olsRegression(A,B);
+  pipeData.alphaH=alphaH;pipeData.betaH=betaH;pipeData.residuals=residuals;pipeData.r2=r2;
+  setOut(2,`alpha_hat=${alphaH.toFixed(4)}  beta_hat=${betaH.toFixed(4)}  R2=${r2.toFixed(4)}  beta_error=${((betaH-(cfg.TRUE_BETA||1.4))*100).toFixed(2)}%`);
+
+  const step=Math.max(1,Math.floor(A.length/200));
+  const scatter=[];for(let i=0;i<B.length;i+=step)scatter.push({x:B[i],y:A[i]});
+  const bMin=Math.min(...Array.from(B)),bMax=Math.max(...Array.from(B));
+  dChart('olsChart');
+  charts['olsChart']=new Chart(document.getElementById('olsChart'),{
+    type:'scatter',
+    data:{datasets:[
+      {label:'A vs B',data:scatter,backgroundColor:'rgba(0,212,255,0.25)',pointRadius:2.5,pointBorderWidth:0},
+      {label:`Fit: A = ${alphaH.toFixed(2)} + ${betaH.toFixed(3)}xB`,
+        data:[{x:bMin,y:alphaH+betaH*bMin},{x:bMax,y:alphaH+betaH*bMax}],
+        type:'line',borderColor:CC.red,backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0},
+    ]},
+    options:{...baseOpts(),scales:{x:{grid:{color:CC.muted},title:{display:true,text:'B Price',color:'#4e6380'}},y:{grid:{color:CC.muted},title:{display:true,text:'A Price',color:'#4e6380'}}}},
+  });
+  document.getElementById('olsStats').innerHTML=chips([
+    {l:'alpha hat',v:alphaH.toFixed(4),cls:'acc'},{l:'beta hat',v:betaH.toFixed(4),cls:'acc'},
+    {l:'True beta',v:(cfg.TRUE_BETA||1.4).toFixed(2),cls:'yel'},
+    {l:'Beta error',v:((betaH-(cfg.TRUE_BETA||1.4))*100).toFixed(2)+'%',cls:'neg'},
+    {l:'R squared',v:r2.toFixed(4),cls:'pos'},
+  ]);
+  showViz(2);
+}
+
