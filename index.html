@@ -810,3 +810,28 @@ function step2(){
   showViz(2);
 }
 
+function step3(){
+  const{residuals}=pipeData;const n=residuals.length;
+  const arr=Array.from(residuals);
+  const mu=mean(arr),sg=std(arr);
+  const labels=Array.from({length:n},(_,i)=>i);
+  setOut(3,`Spread mean=${mu.toFixed(4)}  std=${sg.toFixed(4)}  min=${Math.min(...arr).toFixed(3)}  max=${Math.max(...arr).toFixed(3)}`);
+  dChart('spreadChart');
+  charts['spreadChart']=new Chart(document.getElementById('spreadChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Spread',data:arr,borderColor:CC.green,backgroundColor:'rgba(0,229,160,0.06)',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3},
+      {label:'Mean',data:new Array(n).fill(mu),borderColor:CC.yellow,borderWidth:1.2,borderDash:[6,4],pointRadius:0},
+      {label:'+1sig',data:new Array(n).fill(mu+sg),borderColor:'rgba(255,77,109,0.45)',borderWidth:1,borderDash:[3,6],pointRadius:0},
+      {label:'-1sig',data:new Array(n).fill(mu-sg),borderColor:'rgba(255,77,109,0.45)',borderWidth:1,borderDash:[3,6],pointRadius:0},
+    ]},
+    options:{...baseOpts()},
+  });
+  document.getElementById('spreadStats').innerHTML=chips([
+    {l:'Mean',v:mu.toFixed(4),cls:'acc'},{l:'Std Dev',v:sg.toFixed(4)},
+    {l:'Min',v:Math.min(...arr).toFixed(3),cls:'neg'},{l:'Max',v:Math.max(...arr).toFixed(3),cls:'pos'},
+    {l:'Stationary',v:sg<2.5?'Yes':'Check',cls:sg<2.5?'pos':'yel'},
+  ]);
+  showViz(3);
+}
+
