@@ -890,3 +890,35 @@ function step5(){
   showViz(5);
 }
 
+function step6(){
+  const{A,B,alphaH,betaH,cfg,z,pos}=pipeData;
+  const{aNow,bNow,sNow,zNow,action}=predictCurrent(A,B,alphaH,betaH,cfg.ENTRY_Z||1.8,cfg.EXIT_Z||0.4,cfg.STOP_Z||3.5);
+  setOut(6,`A=${aNow.toFixed(3)}  B=${bNow.toFixed(3)}  Spread=${sNow.toFixed(4)}  Z=${zNow.toFixed(4)}  --> ${action}`);
+
+  // Gauge
+  const gv=document.getElementById('gaugeVal'),gs=document.getElementById('gaugeSig');
+  gv.textContent=zNow.toFixed(3);
+  gv.style.color=action==='LONG SPREAD'?CC.green:action==='SHORT SPREAD'?CC.red:CC.yellow;
+  const sigCls=action==='LONG SPREAD'?'sig-long':action==='SHORT SPREAD'?'sig-short':'sig-none';
+  gs.className=`gauge-signal ${sigCls}`;gs.textContent=action==='STOP-LOSS'?'STOP-LOSS':action;
+
+  // Flow diagram
+  const entryZ=cfg.ENTRY_Z||1.8;
+  document.getElementById('predFlow').innerHTML=`
+    <div class="flow-row">
+      <div class="flow-box"><div class="flow-box-label">Price A (latest)</div><div class="flow-box-val">${aNow.toFixed(3)}</div><div class="flow-box-sub">Last simulated close</div></div>
+      <div class="flow-op">&#43;</div>
+      <div class="flow-box"><div class="flow-box-label">Price B (latest)</div><div class="flow-box-val">${bNow.toFixed(3)}</div><div class="flow-box-sub">Last simulated close</div></div>
+    </div>
+    <div class="flow-arrow-v">&#8595; Apply OLS: Spread = A &#8722; (&#945; + &#946;&#183;B)</div>
+    <div class="flow-row">
+      <div class="flow-box ${Math.abs(sNow)>1.5?'highlight':''}">
+        <div class="flow-box-label">Current Spread</div>
+        <div class="flow-box-val" style="color:${Math.abs(sNow)>2?CC.yellow:CC.text}">${sNow.toFixed(4)}</div>
+        <div class="flow-box-sub">&#945;=${alphaH.toFixed(3)}  &#946;=${betaH.toFixed(3)}</div>
+      </div>
+    </div>
+    <div class="flow-arrow-v">&#8595; Rolling Z-Score (60-day window)</div>
+    <div class="flow-row">
+      <div class="flow-box highlight">
+        <div class="flow-box-label">Z-Score Now</div>
