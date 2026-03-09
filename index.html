@@ -961,3 +961,23 @@ function step6(){
       scales:{x:{grid:{color:'transparent'},ticks:{maxTicksLimit:6}},y:{grid:{color:CC.muted}}}},
   });
 
+  // Breadcrumb pipeline
+  const aColor=action==='LONG SPREAD'?CC.green:action==='SHORT SPREAD'?CC.red:CC.yellow;
+  document.getElementById('predSteps').innerHTML=`
+    <span class="pred-step lit">A=${aNow.toFixed(2)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">B=${bNow.toFixed(2)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">OLS(&#945;=${alphaH.toFixed(2)}, &#946;=${betaH.toFixed(3)})</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">Spread=${sNow.toFixed(3)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">Z=${zNow.toFixed(3)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit" style="border-color:${aColor};color:${aColor}">${action}</span>
+  `;
+  showViz(6);
+}
+</script>
+</body>
+</html>
