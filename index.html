@@ -240,3 +240,18 @@ STOP_Z      = 3.5          # stop-loss at |z| > stop</textarea>
       <div class="block-out" id="out0"></div>
     </div>
 
+    <!-- BLOCK 1: DATA -->
+    <div class="block" id="block1">
+      <div class="block-header">
+        <div class="block-num">1</div>
+        <div class="block-title">Data Generation (Cointegrated Series)</div>
+        <span class="block-tag tag-data">DATA</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code1" rows="22" spellcheck="false"># ── COINTEGRATED PAIR SIMULATION ─────────────
+# B follows a random walk (real stock-like)
+# A = beta*B + spread (spread is mean-reverting)
+
+def generate_pair(n, beta, mean_spread, vol, drift, seed):
+    rng = np.random.default_rng(seed)
+
