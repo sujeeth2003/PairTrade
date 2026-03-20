@@ -347,3 +347,18 @@ spread_mean = np.convolve(
       <div class="block-out" id="out3"></div>
     </div>
 
+    <!-- BLOCK 4: Z-SCORE -->
+    <div class="block" id="block4">
+      <div class="block-header">
+        <div class="block-num">4</div>
+        <div class="block-title">Z-Score Normalisation</div>
+        <span class="block-tag tag-ml">ZSCORE</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code4" rows="18" spellcheck="false"># ── Z-SCORE: How many sigma from mean? ────────
+# z = (spread - mu) / sigma
+# Uses rolling window (no look-ahead bias)
+# |z| > ENTRY_Z  -> trade opportunity
+# |z| < EXIT_Z   -> close position
+# |z| > STOP_Z   -> stop-loss trigger
+
