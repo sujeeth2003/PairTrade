@@ -484,3 +484,27 @@ a_now, b_now, spread_now, z_now, action = predict_current(
       </div>
     </div>
 
+    <!-- VIZ 1 -->
+    <div class="viz-section" id="viz1">
+      <div class="viz-header">
+        <div class="viz-title">&#9313; Simulated Price Series — A &amp; B</div>
+        <div class="viz-subtitle">Cointegrated pair (random walk + OU spread)</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="priceChart"></canvas></div>
+        <div class="stats-row" id="priceStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 2 -->
+    <div class="viz-section" id="viz2">
+      <div class="viz-header">
+        <div class="viz-title">&#9314; OLS Regression — A vs B Scatter</div>
+        <div class="viz-subtitle">Hedge ratio estimation via ordinary least squares</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="olsChart"></canvas></div>
+        <div class="stats-row" id="olsStats"></div>
+      </div>
+    </div>
+
