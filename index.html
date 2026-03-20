@@ -362,3 +362,19 @@ spread_mean = np.convolve(
 # |z| < EXIT_Z   -> close position
 # |z| > STOP_Z   -> stop-loss trigger
 
+def rolling_zscore(spread, window=60):
+    z = np.zeros(len(spread))
+    for i in range(window, len(spread)):
+        w  = spread[i-window:i]
+        mu  = np.mean(w)
+        sig = np.std(w)
+        if sig > 1e-9:
+            z[i] = (spread[i] - mu) / sig
+    return z
+
+z_score  = rolling_zscore(spread, window=60)
+Z_WINDOW = 60  # lookback bars used</textarea>
+      </div>
+      <div class="block-out" id="out4"></div>
+    </div>
+
