@@ -293,3 +293,20 @@ A, B, true_spread = generate_pair(
 # ratio. We regress A on B to find how many units
 # of B perfectly hedge one unit of A.
 
+def ols_regression(A, B):
+    n  = len(A)
+    Bx = np.column_stack([np.ones(n), B])
+
+    # beta = (X'X)^-1 X'y  (closed-form OLS)
+    XtX_inv = np.linalg.inv(Bx.T @ Bx)
+    beta    = XtX_inv @ (Bx.T @ A)
+
+    alpha_hat = beta[0]
+    beta_hat  = beta[1]
+    residuals = A - (alpha_hat + beta_hat * B)
+
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((A - np.mean(A))**2)
+    r2     = 1 - ss_res / ss_tot
+    return alpha_hat, beta_hat, residuals, r2
+
