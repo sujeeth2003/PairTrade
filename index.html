@@ -580,3 +580,23 @@ const CC = {
   muted:   '#1e2d42', text:    '#dde4f0',
 };
 
+const TT = {
+  backgroundColor:'#111722', borderColor:'#1e2d42', borderWidth:1,
+  titleColor:'#dde4f0', bodyColor:'#7a99bb', padding:10,
+};
+
+function baseOpts(extra={}) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:500},
+    plugins:{ legend:{labels:{boxWidth:8,padding:12,font:{size:10}}}, tooltip:{...TT} },
+    scales:{
+      x:{grid:{color:'#1e2d42'},ticks:{maxTicksLimit:8}},
+      y:{grid:{color:'#1e2d42'}},
+    },
+    ...extra,
+  };
+}
+let charts={};
+function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
