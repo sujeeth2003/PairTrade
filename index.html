@@ -743,3 +743,18 @@ function setPipe(i,cls){
   if(cls==='done') document.getElementById('block'+i).className='block done-block';
 }
 
+// ══════════════════════════════════════════
+//  STEPS
+// ══════════════════════════════════════════
+function step0(){
+  const cfg=parseConfig(document.getElementById('code0').value);
+  pipeData.cfg=cfg;
+  setOut(0,`Loaded ${Object.keys(cfg).length} parameters — N=${cfg.N_DAYS||500}  beta=${cfg.TRUE_BETA||1.4}  entry_z=${cfg.ENTRY_Z||1.8}`);
+  document.getElementById('configStats').innerHTML=chips([
+    {l:'Days',v:cfg.N_DAYS||500,cls:'acc'},{l:'True Beta',v:cfg.TRUE_BETA||1.4,cls:'acc'},
+    {l:'Spread Vol',v:cfg.SPREAD_VOL||0.6},{l:'Entry |z|',v:cfg.ENTRY_Z||1.8,cls:'yel'},
+    {l:'Exit |z|',v:cfg.EXIT_Z||0.4,cls:'yel'},{l:'Stop |z|',v:cfg.STOP_Z||3.5,cls:'neg'},
+  ]);
+  showViz(0);
+}
+
