@@ -624,3 +624,18 @@ function SeededRNG(seed){
   };
 }
 
+// ══════════════════════════════════════════
+//  ENGINE (mirrors Python logic exactly)
+// ══════════════════════════════════════════
+function generatePair(n,beta,meanSpread,vol,drift,seed){
+  const rng=new SeededRNG(seed);
+  const B=new Float64Array(n); B[0]=100;
+  for(let i=1;i<n;i++) B[i]=B[i-1]*Math.exp(rng.normal(drift,0.012));
+  const spread=new Float64Array(n); spread[0]=meanSpread;
+  const theta=0.08;
+  for(let i=1;i<n;i++) spread[i]=spread[i-1]+theta*(meanSpread-spread[i-1])+rng.normal(0,vol);
+  const A=new Float64Array(n);
+  for(let i=0;i<n;i++) A[i]=beta*B[i]+spread[i];
+  return {A,B,trueSpread:spread};
+}
+
