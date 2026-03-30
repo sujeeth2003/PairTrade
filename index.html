@@ -835,3 +835,30 @@ function step3(){
   showViz(3);
 }
 
+function step4(){
+  const{residuals,cfg}=pipeData;
+  const z=rollingZscore(residuals,60);pipeData.z=z;
+  const n=z.length;const arr=Array.from(z);
+  const entry=cfg.ENTRY_Z||1.8,stop=cfg.STOP_Z||3.5;
+  const labels=Array.from({length:n},(_,i)=>i);
+  setOut(4,`Z-score: min=${Math.min(...arr).toFixed(3)}  max=${Math.max(...arr).toFixed(3)}  bars|z|>entry=${arr.filter(v=>Math.abs(v)>entry).length}`);
+  dChart('zscoreChart');
+  charts['zscoreChart']=new Chart(document.getElementById('zscoreChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Z-Score',data:arr,borderColor:CC.accent2,backgroundColor:'rgba(124,58,237,0.07)',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3},
+      {label:`+Entry(${entry})`,data:new Array(n).fill(entry),borderColor:CC.green,borderWidth:1.2,borderDash:[5,5],pointRadius:0},
+      {label:`-Entry`,data:new Array(n).fill(-entry),borderColor:CC.green,borderWidth:1.2,borderDash:[5,5],pointRadius:0},
+      {label:`+Stop(${stop})`,data:new Array(n).fill(stop),borderColor:CC.red,borderWidth:1,borderDash:[3,7],pointRadius:0},
+      {label:`-Stop`,data:new Array(n).fill(-stop),borderColor:CC.red,borderWidth:1,borderDash:[3,7],pointRadius:0},
+    ]},
+    options:{...baseOpts()},
+  });
+  document.getElementById('zStats').innerHTML=chips([
+    {l:'Min Z',v:Math.min(...arr).toFixed(3),cls:'neg'},{l:'Max Z',v:Math.max(...arr).toFixed(3),cls:'pos'},
+    {l:`Bars |z|>${entry}`,v:arr.filter(v=>Math.abs(v)>entry).length,cls:'yel'},
+    {l:`Bars |z|>${stop}`,v:arr.filter(v=>Math.abs(v)>stop).length,cls:'neg'},
+  ]);
+  showViz(4);
+}
+
