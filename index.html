@@ -922,3 +922,22 @@ function step6(){
     <div class="flow-row">
       <div class="flow-box highlight">
         <div class="flow-box-label">Z-Score Now</div>
+        <div class="flow-box-val" style="color:${Math.abs(zNow)>entryZ?CC.red:CC.accent}">${zNow.toFixed(4)}</div>
+        <div class="flow-box-sub">Entry threshold: &#177;${entryZ}</div>
+      </div>
+    </div>
+    <div class="flow-arrow-v">&#8595; Signal decision logic</div>
+    <div class="flow-row">
+      <div class="flow-box highlight">
+        <div class="flow-box-label">Decision</div>
+        <div class="flow-box-val" style="font-size:14px;color:${action==='LONG SPREAD'?CC.green:action==='SHORT SPREAD'?CC.red:CC.yellow}">${action}</div>
+        <div class="flow-box-sub">${
+          action==='LONG SPREAD'?'Buy A, Sell '+betaH.toFixed(2)+'x B':
+          action==='SHORT SPREAD'?'Sell A, Buy '+betaH.toFixed(2)+'x B':
+          action==='STOP-LOSS'?'|z| exceeded stop — force exit':
+          '|z| within neutral band — no trade'
+        }</div>
+      </div>
+    </div>
+  `;
+
