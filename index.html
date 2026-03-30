@@ -941,3 +941,23 @@ function step6(){
     </div>
   `;
 
+  // Recent Z bar chart
+  const tail=80;
+  const zTail=Array.from(z).slice(-tail);
+  const posTail=Array.from(pos).slice(-tail);
+  const bg2=zTail.map((_,i)=>{
+    if(i===zTail.length-1) return CC.yellow;
+    return posTail[i]===1?'rgba(0,229,160,0.42)':posTail[i]===-1?'rgba(255,77,109,0.42)':'rgba(124,58,237,0.2)';
+  });
+  dChart('recentZChart');
+  charts['recentZChart']=new Chart(document.getElementById('recentZChart'),{
+    type:'bar',
+    data:{labels:zTail.map((_,i)=>i),datasets:[
+      {label:`Last ${tail} bars  (yellow = NOW)`,data:zTail,backgroundColor:bg2,borderWidth:0,barPercentage:1,categoryPercentage:1},
+      {label:'Entry',data:new Array(tail).fill(cfg.ENTRY_Z||1.8),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[4,4],pointRadius:0},
+      {label:'-Entry',data:new Array(tail).fill(-(cfg.ENTRY_Z||1.8)),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[4,4],pointRadius:0},
+    ]},
+    options:{...baseOpts(),plugins:{legend:{labels:{boxWidth:8,padding:10,font:{size:9}}},tooltip:{...TT}},
+      scales:{x:{grid:{color:'transparent'},ticks:{maxTicksLimit:6}},y:{grid:{color:CC.muted}}}},
+  });
+
