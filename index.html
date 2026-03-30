@@ -862,3 +862,31 @@ function step4(){
   showViz(4);
 }
 
+function step5(){
+  const{z,cfg}=pipeData;
+  const pos=generateSignals(z,cfg.ENTRY_Z||1.8,cfg.EXIT_Z||0.4,cfg.STOP_Z||3.5);
+  pipeData.pos=pos;
+  const n=z.length,arr=Array.from(z);
+  const longs=Array.from(pos).filter(v=>v===1).length;
+  const shorts=Array.from(pos).filter(v=>v===-1).length;
+  const active=longs+shorts;
+  setOut(5,`Long: ${longs} bars  Short: ${shorts} bars  Flat: ${n-active} bars  Active: ${((active/n)*100).toFixed(1)}%`);
+  const labels=Array.from({length:n},(_,i)=>i);
+  const bg=arr.map((_,i)=>pos[i]===1?'rgba(0,229,160,0.38)':pos[i]===-1?'rgba(255,77,109,0.38)':'rgba(124,58,237,0.14)');
+  dChart('signalChart');
+  charts['signalChart']=new Chart(document.getElementById('signalChart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Z (green=long red=short)',data:arr,backgroundColor:bg,borderWidth:0,barPercentage:1,categoryPercentage:1},
+      {label:`Entry ±${cfg.ENTRY_Z||1.8}`,data:new Array(n).fill(cfg.ENTRY_Z||1.8),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[5,4],pointRadius:0},
+      {label:' ',data:new Array(n).fill(-(cfg.ENTRY_Z||1.8)),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[5,4],pointRadius:0},
+    ]},
+    options:{...baseOpts(),scales:{x:{grid:{color:'transparent'},ticks:{maxTicksLimit:8}},y:{grid:{color:CC.muted}}}},
+  });
+  document.getElementById('sigStats').innerHTML=chips([
+    {l:'Long bars',v:longs,cls:'pos'},{l:'Short bars',v:shorts,cls:'neg'},
+    {l:'Flat bars',v:n-active},{l:'% Active',v:((active/n)*100).toFixed(1)+'%',cls:'yel'},
+  ]);
+  showViz(5);
+}
+
