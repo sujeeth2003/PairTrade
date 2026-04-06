@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Pair Trading — Cointegration Pipeline</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #06080f;
+  --bg2:      #0c1018;
+  --bg3:      #111722;
+  --bg4:      #161e2d;
+  --border:   #1e2d42;
+  --border2:  #253448;
+  --text:     #dde4f0;
+  --muted:    #4e6380;
+  --dim:      #2a3d57;
+  --accent:   #00d4ff;
+  --accent2:  #7c3aed;
+  --green:    #00e5a0;
+  --red:      #ff4d6d;
+  --yellow:   #ffd166;
+  --orange:   #ff9f43;
+  --mono:     'JetBrains Mono', monospace;
+  --head:     'Syne', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;overflow-x:hidden;}
+
+/* HEADER */
+.header{
+  background:linear-gradient(135deg,var(--bg2) 0%,#0a1020 100%);
+  border-bottom:1px solid var(--border);
+  padding:18px 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+}
+.logo-block{display:flex;flex-direction:column;gap:2px;}
+.logo{font-family:var(--head);font-size:20px;font-weight:800;letter-spacing:-0.02em;color:var(--accent);}
+.logo span{color:var(--muted);}
+.subtitle{font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+.run-btn{
+  background:linear-gradient(135deg,var(--accent) 0%,#0099cc 100%);
+  color:#000;border:none;padding:10px 26px;border-radius:6px;
+  font-family:var(--head);font-size:13px;font-weight:700;cursor:pointer;
+  letter-spacing:0.05em;transition:all 0.2s;
+  box-shadow:0 0 20px rgba(0,212,255,0.3);
+}
+.run-btn:hover{box-shadow:0 0 32px rgba(0,212,255,0.6);transform:translateY(-1px);}
+.run-btn.running{background:linear-gradient(135deg,var(--yellow),#f59e0b);animation:pulse 0.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+
+/* PIPELINE BAR */
+.pipeline{
+  display:flex;align-items:center;gap:0;
+  padding:12px 32px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  overflow-x:auto;
+}
+.pipe-step{display:flex;align-items:center;gap:0;cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.pipe-label{
+  padding:7px 16px;border-radius:4px;font-size:11px;font-weight:600;
+  letter-spacing:0.06em;text-transform:uppercase;
+  border:1px solid var(--border);background:var(--bg3);color:var(--muted);
+  transition:all 0.2s;white-space:nowrap;
+}
+.pipe-step.active .pipe-label{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,0.08);box-shadow:0 0 12px rgba(0,212,255,0.15);}
+.pipe-step.done .pipe-label{border-color:var(--green);color:var(--green);background:rgba(0,229,160,0.06);}
+.pipe-arrow{color:var(--dim);padding:0 6px;font-size:14px;flex-shrink:0;}
+
+/* MAIN LAYOUT */
+.main{display:flex;gap:0;height:calc(100vh - 113px);}
+
+/* LEFT CODE PANEL */
+.code-panel{width:480px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;background:var(--bg);}
+.code-panel::-webkit-scrollbar{width:4px;}
+.code-panel::-webkit-scrollbar-track{background:var(--bg);}
+.code-panel::-webkit-scrollbar-thumb{background:var(--dim);}
+
+.block{border-bottom:1px solid var(--border);}
+.block-header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--bg2);cursor:pointer;border-bottom:1px solid var(--border);user-select:none;}
+.block-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;border:1.5px solid var(--dim);color:var(--muted);font-family:var(--head);}
+.block.active-block .block-num{border-color:var(--accent);color:var(--accent);}
+.block.done-block .block-num{border-color:var(--green);color:var(--green);}
+.block-title{font-family:var(--head);font-size:12px;font-weight:700;color:var(--text);letter-spacing:0.04em;}
+.block-tag{margin-left:auto;font-size:9px;font-weight:600;padding:2px 8px;border-radius:3px;letter-spacing:0.08em;text-transform:uppercase;}
+.tag-data{background:rgba(124,58,237,0.15);color:#a78bfa;border:1px solid rgba(124,58,237,0.25);}
+.tag-stat{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+.tag-ml  {background:rgba(0,229,160,0.1);color:var(--green);border:1px solid rgba(0,229,160,0.2);}
+.tag-sig {background:rgba(255,209,102,0.1);color:var(--yellow);border:1px solid rgba(255,209,102,0.2);}
+.tag-pred{background:rgba(255,77,109,0.1);color:var(--red);border:1px solid rgba(255,77,109,0.2);}
+
+.block-body textarea{
+  width:100%;background:#080c14;color:#a8d8ea;
+  border:none;outline:none;resize:none;
+  font-family:var(--mono);font-size:11.5px;line-height:1.65;
+  padding:14px 16px 14px 44px;
+  tab-size:4;min-height:120px;
+}
+.block-body{position:relative;}
+.block-body::before{
+  content:attr(data-lines);
+  position:absolute;left:0;top:0;width:36px;
+  background:var(--bg2);border-right:1px solid var(--border);
+  padding:14px 0;font-size:9px;color:var(--dim);
+  line-height:1.65;text-align:center;
+  white-space:pre;pointer-events:none;
+  font-family:var(--mono);
+}
+
+.block-out{
+  background:var(--bg3);border-top:1px solid var(--border);
+  padding:8px 16px;font-size:10.5px;color:var(--green);
+  font-family:var(--mono);display:none;white-space:pre-wrap;
+}
+.block-out.visible{display:block;}
+.block-out.error{color:var(--red);}
+.block-out .out-label{color:var(--muted);display:block;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;}
+
+/* RIGHT VIZ PANEL */
+.viz-panel{flex:1;overflow-y:auto;background:var(--bg);}
+.viz-panel::-webkit-scrollbar{width:4px;}
+.viz-panel::-webkit-scrollbar-track{background:var(--bg);}
+.viz-panel::-webkit-scrollbar-thumb{background:var(--dim);}
+
+.viz-section{border-bottom:1px solid var(--border);display:none;opacity:0;transition:opacity 0.4s;}
+.viz-section.visible{display:block;}
+.viz-section.shown{opacity:1;}
+
+.viz-header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.viz-title{font-family:var(--head);font-size:12px;font-weight:700;color:var(--text);letter-spacing:0.04em;}
+.viz-subtitle{font-size:10px;color:var(--muted);margin-left:auto;}
+.viz-body{padding:16px 20px;}
+
+.chart-wrap{position:relative;height:200px;margin-bottom:12px;}
+.chart-wrap.tall{height:250px;}
+.chart-wrap.short{height:140px;}
+
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-chip{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px 14px;flex:1;min-width:90px;}
+.sc-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.sc-val{font-size:15px;font-weight:700;color:var(--text);}
+.sc-val.pos{color:var(--green);}
+.sc-val.neg{color:var(--red);}
+.sc-val.acc{color:var(--accent);}
+.sc-val.yel{color:var(--yellow);}
+
+/* PREDICTION */
+.flow-diagram{display:flex;flex-direction:column;gap:12px;padding:16px 20px;}
+.flow-row{display:flex;align-items:stretch;gap:10px;}
+.flow-box{flex:1;border-radius:6px;padding:12px 14px;border:1px solid var(--border);background:var(--bg3);}
+.flow-box.highlight{border-color:var(--accent);background:rgba(0,212,255,0.04);}
+.flow-box-label{font-family:var(--head);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;}
+.flow-box-val{font-size:17px;font-weight:700;color:var(--text);}
+.flow-box-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+.flow-arrow-v{text-align:center;color:var(--dim);font-size:16px;padding:2px 0;}
+.flow-op{display:flex;align-items:center;font-size:20px;color:var(--dim);flex-shrink:0;}
+
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 20px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin:16px 20px 0;}
+.gauge-label{font-family:var(--head);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+.gauge-val{font-family:var(--head);font-size:52px;font-weight:800;letter-spacing:-0.03em;}
+.gauge-signal{font-family:var(--head);font-size:12px;font-weight:700;padding:6px 22px;border-radius:20px;letter-spacing:0.08em;}
+.sig-long {background:rgba(0,229,160,0.15);color:var(--green);border:1px solid rgba(0,229,160,0.3);}
+.sig-short{background:rgba(255,77,109,0.15);color:var(--red);border:1px solid rgba(255,77,109,0.3);}
+.sig-none {background:rgba(255,209,102,0.1);color:var(--yellow);border:1px solid rgba(255,209,102,0.2);}
+
+.pred-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 20px;background:var(--bg3);border-top:1px solid var(--border);font-size:11px;}
+.pred-step{background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:4px 10px;color:var(--muted);}
+.pred-step.lit{border-color:var(--accent);color:var(--accent);}
+.pred-arrow{color:var(--dim);}
+
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:400px;gap:12px;color:var(--muted);}
+.empty-icon{font-size:42px;opacity:0.25;}
+.empty-text{font-family:var(--head);font-size:15px;font-weight:700;}
+.empty-sub{font-size:11px;text-align:center;max-width:280px;line-height:1.7;color:var(--dim);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-block">
+    <div class="logo">PAIR<span>.</span>TRADE<span> /</span> DEMO</div>
+    <div class="subtitle">Cointegrated Pair · OLS Spread · Z-Score · Signal Pipeline</div>
+  </div>
+  <button class="run-btn" id="runBtn" onclick="runPipeline()">&#9654; RUN PIPELINE</button>
+</div>
+
+<!-- PIPELINE BAR -->
+<div class="pipeline">
+  <div class="pipe-step" id="ps0"><div class="pipe-label">&#9312; Config</div></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-step" id="ps1"><div class="pipe-label">&#9313; Data Generation</div></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-step" id="ps2"><div class="pipe-label">&#9314; OLS Regression</div></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-step" id="ps3"><div class="pipe-label">&#9315; Spread Calc</div></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-step" id="ps4"><div class="pipe-label">&#9316; Z-Score</div></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-step" id="ps5"><div class="pipe-label">&#9317; Signal Gen</div></div>
+  <div class="pipe-arrow">&#8594;</div>
+  <div class="pipe-step" id="ps6"><div class="pipe-label">&#9318; Prediction</div></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- CODE PANEL -->
+  <div class="code-panel" id="codePanel">
+
+    <!-- BLOCK 0: CONFIG -->
+    <div class="block" id="block0">
+      <div class="block-header">
+        <div class="block-num">0</div>
+        <div class="block-title">Configuration &amp; Parameters</div>
+        <span class="block-tag tag-data">CONFIG</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code0" rows="15" spellcheck="false"># ── PAIR CONFIGURATION ──────────────────────
+TICKER_A    = "STOCK_A"
+TICKER_B    = "STOCK_B"
+N_DAYS      = 500          # trading days
+SEED        = 42           # reproducibility
+
+# ── COINTEGRATION PARAMETERS ─────────────────
+TRUE_BETA   = 1.4          # true hedge ratio
+MEAN_SPREAD = 2.0          # long-run equilibrium
+SPREAD_VOL  = 0.6          # spread noise
+DRIFT       = 0.00008      # tiny drift in B
+
+# ── SIGNAL THRESHOLDS ────────────────────────
+ENTRY_Z     = 1.8          # open at |z| > entry
+EXIT_Z      = 0.4          # close at |z| < exit
+STOP_Z      = 3.5          # stop-loss at |z| > stop</textarea>
+      </div>
+      <div class="block-out" id="out0"></div>
+    </div>
+
+    <!-- BLOCK 1: DATA -->
+    <div class="block" id="block1">
+      <div class="block-header">
+        <div class="block-num">1</div>
+        <div class="block-title">Data Generation (Cointegrated Series)</div>
+        <span class="block-tag tag-data">DATA</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code1" rows="22" spellcheck="false"># ── COINTEGRATED PAIR SIMULATION ─────────────
+# B follows a random walk (real stock-like)
+# A = beta*B + spread (spread is mean-reverting)
+
+def generate_pair(n, beta, mean_spread, vol, drift, seed):
+    rng = np.random.default_rng(seed)
+
+    # Stock B: geometric random walk with drift
+    b_returns = rng.normal(drift, 0.012, n)
+    B = 100 * np.exp(np.cumsum(b_returns))
+
+    # Mean-reverting spread (Ornstein-Uhlenbeck)
+    spread = np.zeros(n)
+    spread[0] = mean_spread
+    theta = 0.08       # mean-reversion speed
+    for t in range(1, n):
+        noise = rng.normal(0, vol)
+        spread[t] = (spread[t-1]
+                    + theta*(mean_spread - spread[t-1])
+                    + noise)
+
+    # Stock A: beta * B + spread
+    A = beta * B + spread
+    return A, B, spread
+
+A, B, true_spread = generate_pair(
+    N_DAYS, TRUE_BETA, MEAN_SPREAD, SPREAD_VOL, DRIFT, SEED
+)</textarea>
+      </div>
+      <div class="block-out" id="out1"></div>
+    </div>
+
+    <!-- BLOCK 2: OLS -->
+    <div class="block" id="block2">
+      <div class="block-header">
+        <div class="block-num">2</div>
+        <div class="block-title">OLS Regression — Estimate Hedge Ratio beta</div>
+        <span class="block-tag tag-stat">STAT</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code2" rows="21" spellcheck="false"># ── OLS: A = alpha + beta * B + epsilon ───────
+# Ordinary Least Squares to estimate the hedge
+# ratio. We regress A on B to find how many units
+# of B perfectly hedge one unit of A.
+
+def ols_regression(A, B):
+    n  = len(A)
+    Bx = np.column_stack([np.ones(n), B])
+
+    # beta = (X'X)^-1 X'y  (closed-form OLS)
+    XtX_inv = np.linalg.inv(Bx.T @ Bx)
+    beta    = XtX_inv @ (Bx.T @ A)
+
+    alpha_hat = beta[0]
+    beta_hat  = beta[1]
+    residuals = A - (alpha_hat + beta_hat * B)
+
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((A - np.mean(A))**2)
+    r2     = 1 - ss_res / ss_tot
+    return alpha_hat, beta_hat, residuals, r2
+
+alpha_hat, beta_hat, residuals, r2 = ols_regression(A, B)</textarea>
+      </div>
+      <div class="block-out" id="out2"></div>
+    </div>
+
+    <!-- BLOCK 3: SPREAD -->
+    <div class="block" id="block3">
+      <div class="block-header">
+        <div class="block-num">3</div>
+        <div class="block-title">Spread Calculation</div>
+        <span class="block-tag tag-stat">STAT</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code3" rows="16" spellcheck="false"># ── SPREAD = A - (alpha + beta * B) ──────────
+# The spread is the OLS residual — difference
+# between actual A and the B-predicted A.
+# A cointegrated pair has a STATIONARY spread
+# (mean-reverting) → this is what we trade!
+
+def compute_spread(A, B, alpha, beta):
+    predicted_A = alpha + beta * B
+    spread      = A - predicted_A
+    return spread, predicted_A
+
+spread, predicted_A = compute_spread(
+    A, B, alpha_hat, beta_hat
+)
+
+# Rolling 30-day spread mean
+window = 30
+spread_mean = np.convolve(
+    spread, np.ones(window)/window, mode='same'
+)</textarea>
+      </div>
+      <div class="block-out" id="out3"></div>
+    </div>
+
+    <!-- BLOCK 4: Z-SCORE -->
+    <div class="block" id="block4">
+      <div class="block-header">
+        <div class="block-num">4</div>
+        <div class="block-title">Z-Score Normalisation</div>
+        <span class="block-tag tag-ml">ZSCORE</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code4" rows="18" spellcheck="false"># ── Z-SCORE: How many sigma from mean? ────────
+# z = (spread - mu) / sigma
+# Uses rolling window (no look-ahead bias)
+# |z| > ENTRY_Z  -> trade opportunity
+# |z| < EXIT_Z   -> close position
+# |z| > STOP_Z   -> stop-loss trigger
+
+def rolling_zscore(spread, window=60):
+    z = np.zeros(len(spread))
+    for i in range(window, len(spread)):
+        w  = spread[i-window:i]
+        mu  = np.mean(w)
+        sig = np.std(w)
+        if sig > 1e-9:
+            z[i] = (spread[i] - mu) / sig
+    return z
+
+z_score  = rolling_zscore(spread, window=60)
+Z_WINDOW = 60  # lookback bars used</textarea>
+      </div>
+      <div class="block-out" id="out4"></div>
+    </div>
+
+    <!-- BLOCK 5: SIGNALS -->
+    <div class="block" id="block5">
+      <div class="block-header">
+        <div class="block-num">5</div>
+        <div class="block-title">Signal Generation</div>
+        <span class="block-tag tag-sig">SIGNAL</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code5" rows="28" spellcheck="false"># ── TRADING SIGNALS ───────────────────────────
+# LONG  spread (+1): z < -ENTRY -> buy A, sell B
+# SHORT spread (-1): z > +ENTRY -> sell A, buy B
+# FLAT         ( 0): no position
+#
+# Entry/exit with hysteresis (avoids overtrading):
+#   |z| > ENTRY_Z -> enter trade
+#   |z| < EXIT_Z  -> exit / take profit
+#   |z| > STOP_Z  -> stop-loss (forced exit)
+
+def generate_signals(z, entry, exit_z, stop):
+    pos    = np.zeros(len(z))
+    active = 0    # 0=flat, 1=long, -1=short
+
+    for i in range(1, len(z)):
+        az = abs(z[i])
+        if active == 0:
+            if z[i]   < -entry: active =  1
+            elif z[i] >  entry: active = -1
+        else:
+            if az < exit_z: active = 0  # profit
+            if az > stop:   active = 0  # stop
+
+        pos[i] = active
+    return pos
+
+positions, _ = generate_signals(
+    z_score, ENTRY_Z, EXIT_Z, STOP_Z
+), None</textarea>
+      </div>
+      <div class="block-out" id="out5"></div>
+    </div>
+
+    <!-- BLOCK 6: PREDICTION -->
+    <div class="block" id="block6">
+      <div class="block-header">
+        <div class="block-num">6</div>
+        <div class="block-title">Current Prediction &amp; Trade Decision</div>
+        <span class="block-tag tag-pred">PREDICT</span>
+      </div>
+      <div class="block-body">
+        <textarea id="code6" rows="24" spellcheck="false"># ── CURRENT STATE -> PREDICTION ───────────────
+# Evaluate the latest bar through the full pipeline
+# to generate the current trade recommendation.
+
+def predict_current(A, B, alpha, beta,
+                    entry, exit_z, stop, z_win=60):
+    a_now = A[-1]
+    b_now = B[-1]
+
+    # Current spread
+    spread_now  = a_now - (alpha + beta * b_now)
+
+    # Rolling z-score (only uses past data)
+    spread_hist = A - (alpha + beta * B)
+    mu   = np.mean(spread_hist[-z_win:])
+    sig  = np.std( spread_hist[-z_win:])
+    z_now = (spread_now - mu) / sig if sig > 1e-9 else 0
+
+    # Decision logic
+    az = abs(z_now)
+    if   z_now < -entry:  action = "LONG SPREAD"
+    elif z_now >  entry:  action = "SHORT SPREAD"
+    elif az < exit_z:     action = "EXIT / FLAT"
+    else:                 action = "HOLD"
+    if az > stop:         action = "STOP-LOSS"
+
+    return a_now, b_now, spread_now, z_now, action
+
+a_now, b_now, spread_now, z_now, action = predict_current(
+    A, B, alpha_hat, beta_hat, ENTRY_Z, EXIT_Z, STOP_Z
+)</textarea>
+      </div>
+      <div class="block-out" id="out6"></div>
+    </div>
+
+  </div><!-- /code-panel -->
+
+  <!-- VIZ PANEL -->
+  <div class="viz-panel" id="vizPanel">
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">&#9108;</div>
+      <div class="empty-text">Pipeline Not Running</div>
+      <div class="empty-sub">Press <strong>&#9654; RUN PIPELINE</strong> to execute all blocks and visualise each stage. Edit any code block, then re-run to see changes instantly.</div>
+    </div>
+
+    <!-- VIZ 0 -->
+    <div class="viz-section" id="viz0">
+      <div class="viz-header">
+        <div class="viz-title">&#9312; Configuration Loaded</div>
+        <div class="viz-subtitle">Parameters parsed from block</div>
+      </div>
+      <div class="viz-body">
+        <div class="stats-row" id="configStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 1 -->
+    <div class="viz-section" id="viz1">
+      <div class="viz-header">
+        <div class="viz-title">&#9313; Simulated Price Series — A &amp; B</div>
+        <div class="viz-subtitle">Cointegrated pair (random walk + OU spread)</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="priceChart"></canvas></div>
+        <div class="stats-row" id="priceStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 2 -->
+    <div class="viz-section" id="viz2">
+      <div class="viz-header">
+        <div class="viz-title">&#9314; OLS Regression — A vs B Scatter</div>
+        <div class="viz-subtitle">Hedge ratio estimation via ordinary least squares</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="olsChart"></canvas></div>
+        <div class="stats-row" id="olsStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 3 -->
+    <div class="viz-section" id="viz3">
+      <div class="viz-header">
+        <div class="viz-title">&#9315; Spread = A &#8722; (&#945; + &#946;&#183;B)</div>
+        <div class="viz-subtitle">OLS residuals — stationary mean-reverting series</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap"><canvas id="spreadChart"></canvas></div>
+        <div class="stats-row" id="spreadStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 4 -->
+    <div class="viz-section" id="viz4">
+      <div class="viz-header">
+        <div class="viz-title">&#9316; Rolling Z-Score (60-day window)</div>
+        <div class="viz-subtitle">Normalised spread deviation with entry/exit thresholds</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="zscoreChart"></canvas></div>
+        <div class="stats-row" id="zStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 5 -->
+    <div class="viz-section" id="viz5">
+      <div class="viz-header">
+        <div class="viz-title">&#9317; Signal &amp; Position Track</div>
+        <div class="viz-subtitle">Z-score bars coloured by position (green=long, red=short, grey=flat)</div>
+      </div>
+      <div class="viz-body">
+        <div class="chart-wrap tall"><canvas id="signalChart"></canvas></div>
+        <div class="stats-row" id="sigStats"></div>
+      </div>
+    </div>
+
+    <!-- VIZ 6 -->
+    <div class="viz-section" id="viz6">
+      <div class="viz-header">
+        <div class="viz-title">&#9318; Current State &#8594; Prediction</div>
+        <div class="viz-subtitle">End-to-end pipeline output on latest bar</div>
+      </div>
+      <div class="gauge-wrap" id="gaugeWrap">
+        <div class="gauge-label">Current Z-Score</div>
+        <div class="gauge-val" id="gaugeVal">—</div>
+        <div class="gauge-signal" id="gaugeSig">—</div>
+      </div>
+      <div class="flow-diagram" id="predFlow"></div>
+      <div class="viz-body" style="padding-top:0;">
+        <div class="chart-wrap short"><canvas id="recentZChart"></canvas></div>
+      </div>
+      <div class="pred-flow" id="predSteps"></div>
+    </div>
+
+  </div><!-- /viz-panel -->
+</div><!-- /main -->
+
+<script>
+// ══════════════════════════════════════════
+//  CHART.JS DEFAULTS
+// ══════════════════════════════════════════
+Chart.defaults.color = '#4e6380';
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 10;
+
+const CC = {
+  accent:  '#00d4ff', accent2: '#7c3aed',
+  green:   '#00e5a0', red:     '#ff4d6d',
+  yellow:  '#ffd166', purple:  '#a78bfa',
+  muted:   '#1e2d42', text:    '#dde4f0',
+};
+
+const TT = {
+  backgroundColor:'#111722', borderColor:'#1e2d42', borderWidth:1,
+  titleColor:'#dde4f0', bodyColor:'#7a99bb', padding:10,
+};
+
+function baseOpts(extra={}) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    animation:{duration:500},
+    plugins:{ legend:{labels:{boxWidth:8,padding:12,font:{size:10}}}, tooltip:{...TT} },
+    scales:{
+      x:{grid:{color:'#1e2d42'},ticks:{maxTicksLimit:8}},
+      y:{grid:{color:'#1e2d42'}},
+    },
+    ...extra,
+  };
+}
+let charts={};
+function dChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// ══════════════════════════════════════════
+//  PARSE CONFIG
+// ══════════════════════════════════════════
+function parseConfig(code){
+  const cfg={};
+  code.split('\n').forEach(line=>{
+    const m=line.match(/^([A-Z_]+)\s*=\s*([\d.eE+-]+)/);
+    if(m) cfg[m[1]]=parseFloat(m[2]);
+  });
+  return cfg;
+}
+
+// ══════════════════════════════════════════
+//  SEEDED RNG (Box-Muller)
+// ══════════════════════════════════════════
+function SeededRNG(seed){
+  let s=seed>>>0;
+  this.next=function(){s=(Math.imul(1664525,s)+1013904223)>>>0;return s/4294967296;};
+  this.normal=function(mu=0,sigma=1){
+    const u1=Math.max(this.next(),1e-12),u2=this.next();
+    return mu+sigma*Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+  };
+}
+
+// ══════════════════════════════════════════
+//  ENGINE (mirrors Python logic exactly)
+// ══════════════════════════════════════════
+function generatePair(n,beta,meanSpread,vol,drift,seed){
+  const rng=new SeededRNG(seed);
+  const B=new Float64Array(n); B[0]=100;
+  for(let i=1;i<n;i++) B[i]=B[i-1]*Math.exp(rng.normal(drift,0.012));
+  const spread=new Float64Array(n); spread[0]=meanSpread;
+  const theta=0.08;
+  for(let i=1;i<n;i++) spread[i]=spread[i-1]+theta*(meanSpread-spread[i-1])+rng.normal(0,vol);
+  const A=new Float64Array(n);
+  for(let i=0;i<n;i++) A[i]=beta*B[i]+spread[i];
+  return {A,B,trueSpread:spread};
+}
+
+function olsRegression(A,B){
+  const n=A.length;
+  let sumB=0,sumA=0,sumBB=0,sumAB=0;
+  for(let i=0;i<n;i++){sumB+=B[i];sumA+=A[i];sumBB+=B[i]*B[i];sumAB+=A[i]*B[i];}
+  const denom=n*sumBB-sumB*sumB;
+  const betaH=(n*sumAB-sumA*sumB)/denom;
+  const alphaH=(sumA-betaH*sumB)/n;
+  const res=new Float64Array(n);
+  let ssTot=0,ssRes=0;const mA=sumA/n;
+  for(let i=0;i<n;i++){res[i]=A[i]-(alphaH+betaH*B[i]);ssRes+=res[i]**2;ssTot+=(A[i]-mA)**2;}
+  return{alphaH,betaH,residuals:res,r2:1-ssRes/ssTot};
+}
+
+function rollingZscore(spread,win=60){
+  const z=new Float64Array(spread.length);
+  for(let i=win;i<spread.length;i++){
+    let mu=0;for(let j=i-win;j<i;j++)mu+=spread[j];mu/=win;
+    let vr=0;for(let j=i-win;j<i;j++)vr+=(spread[j]-mu)**2;
+    const sig=Math.sqrt(vr/win);
+    z[i]=sig>1e-9?(spread[i]-mu)/sig:0;
+  }
+  return z;
+}
+
+function generateSignals(z,entry,exitZ,stop){
+  const pos=new Int8Array(z.length);let active=0;
+  for(let i=1;i<z.length;i++){
+    const az=Math.abs(z[i]);
+    if(active===0){if(z[i]<-entry)active=1;else if(z[i]>entry)active=-1;}
+    else{if(az<exitZ)active=0;if(az>stop)active=0;}
+    pos[i]=active;
+  }
+  return pos;
+}
+
+function predictCurrent(A,B,alphaH,betaH,entry,exitZ,stop,zWin=60){
+  const n=A.length,aNow=A[n-1],bNow=B[n-1];
+  const sNow=aNow-(alphaH+betaH*bNow);
+  const hist=[];
+  for(let i=Math.max(0,n-zWin);i<n;i++) hist.push(A[i]-(alphaH+betaH*B[i]));
+  const mu=hist.reduce((a,b)=>a+b,0)/hist.length;
+  const sig=Math.sqrt(hist.reduce((a,v)=>a+(v-mu)**2,0)/hist.length);
+  const zNow=sig>1e-9?(sNow-mu)/sig:0;
+  const az=Math.abs(zNow);
+  let action='HOLD';
+  if(zNow<-entry) action='LONG SPREAD';
+  else if(zNow>entry) action='SHORT SPREAD';
+  else if(az<exitZ) action='EXIT / FLAT';
+  if(az>stop) action='STOP-LOSS';
+  return{aNow,bNow,sNow,zNow,action};
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length;}
+function std(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length);}
+function pearsonR(A,B){
+  const n=A.length,mA=mean(Array.from(A)),mB=mean(Array.from(B));
+  let num=0,dA=0,dB=0;
+  for(let i=0;i<n;i++){num+=(A[i]-mA)*(B[i]-mB);dA+=(A[i]-mA)**2;dB+=(B[i]-mB)**2;}
+  return num/Math.sqrt(dA*dB);
+}
+function chip(l,v,cls){return`<div class="stat-chip"><div class="sc-label">${l}</div><div class="sc-val ${cls}">${v}</div></div>`;}
+function chips(arr){return arr.map(c=>chip(c.l,c.v,c.cls||'')).join('');}
+function setOut(i,msg,err){
+  const el=document.getElementById('out'+i);
+  el.innerHTML=`<span class="out-label">OUTPUT</span>${msg}`;
+  el.className='block-out visible'+(err?' error':'');
+}
+function showViz(id){
+  const el=document.getElementById('viz'+id);
+  el.classList.add('visible');
+  setTimeout(()=>el.classList.add('shown'),30);
+}
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+let pipeData={};
+
+// ══════════════════════════════════════════
+//  PIPELINE RUNNER
+// ══════════════════════════════════════════
+async function runPipeline(){
+  const btn=document.getElementById('runBtn');
+  btn.classList.add('running');btn.textContent='... Running';
+  document.getElementById('emptyState').style.display='none';
+
+  // hide all viz
+  document.querySelectorAll('.viz-section').forEach(e=>{e.classList.remove('visible','shown');});
+
+  const steps=[step0,step1,step2,step3,step4,step5,step6];
+  for(let i=0;i<steps.length;i++){
+    setPipe(i,'active');
+    await delay(i===0?80:300);
+    steps[i]();
+    setPipe(i,'done');
+  }
+  btn.classList.remove('running');btn.textContent='&#8635; RE-RUN';
+}
+function setPipe(i,cls){
+  document.getElementById('ps'+i).className='pipe-step '+cls;
+  if(cls==='done') document.getElementById('block'+i).className='block done-block';
+}
+
+// ══════════════════════════════════════════
+//  STEPS
+// ══════════════════════════════════════════
+function step0(){
+  const cfg=parseConfig(document.getElementById('code0').value);
+  pipeData.cfg=cfg;
+  setOut(0,`Loaded ${Object.keys(cfg).length} parameters — N=${cfg.N_DAYS||500}  beta=${cfg.TRUE_BETA||1.4}  entry_z=${cfg.ENTRY_Z||1.8}`);
+  document.getElementById('configStats').innerHTML=chips([
+    {l:'Days',v:cfg.N_DAYS||500,cls:'acc'},{l:'True Beta',v:cfg.TRUE_BETA||1.4,cls:'acc'},
+    {l:'Spread Vol',v:cfg.SPREAD_VOL||0.6},{l:'Entry |z|',v:cfg.ENTRY_Z||1.8,cls:'yel'},
+    {l:'Exit |z|',v:cfg.EXIT_Z||0.4,cls:'yel'},{l:'Stop |z|',v:cfg.STOP_Z||3.5,cls:'neg'},
+  ]);
+  showViz(0);
+}
+
+function step1(){
+  const c=pipeData.cfg;
+  const{A,B,trueSpread}=generatePair(c.N_DAYS||500,c.TRUE_BETA||1.4,c.MEAN_SPREAD||2.0,c.SPREAD_VOL||0.6,c.DRIFT||0.00008,c.SEED||42);
+  pipeData.A=A;pipeData.B=B;pipeData.trueSpread=trueSpread;
+  const n=A.length;const R=pearsonR(A,B);
+  setOut(1,`Generated ${n} days | A_final=${A[n-1].toFixed(2)}  B_final=${B[n-1].toFixed(2)}  Pearson_r=${R.toFixed(4)}`);
+  const labels=Array.from({length:n},(_,i)=>i);
+  dChart('priceChart');
+  charts['priceChart']=new Chart(document.getElementById('priceChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'A',data:Array.from(A),borderColor:CC.accent,backgroundColor:'transparent',borderWidth:1.8,pointRadius:0,tension:0.3},
+      {label:'B',data:Array.from(B),borderColor:CC.purple,backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,tension:0.3},
+    ]},
+    options:{...baseOpts()},
+  });
+  document.getElementById('priceStats').innerHTML=chips([
+    {l:'A Final',v:A[n-1].toFixed(2),cls:'acc'},{l:'B Final',v:B[n-1].toFixed(2)},
+    {l:'Corr(A,B)',v:R.toFixed(4),cls:'pos'},{l:'A/B Ratio',v:(A[n-1]/B[n-1]).toFixed(3),cls:'yel'},
+  ]);
+  showViz(1);
+}
+
+function step2(){
+  const{A,B,cfg}=pipeData;
+  const{alphaH,betaH,residuals,r2}=olsRegression(A,B);
+  pipeData.alphaH=alphaH;pipeData.betaH=betaH;pipeData.residuals=residuals;pipeData.r2=r2;
+  setOut(2,`alpha_hat=${alphaH.toFixed(4)}  beta_hat=${betaH.toFixed(4)}  R2=${r2.toFixed(4)}  beta_error=${((betaH-(cfg.TRUE_BETA||1.4))*100).toFixed(2)}%`);
+
+  const step=Math.max(1,Math.floor(A.length/200));
+  const scatter=[];for(let i=0;i<B.length;i+=step)scatter.push({x:B[i],y:A[i]});
+  const bMin=Math.min(...Array.from(B)),bMax=Math.max(...Array.from(B));
+  dChart('olsChart');
+  charts['olsChart']=new Chart(document.getElementById('olsChart'),{
+    type:'scatter',
+    data:{datasets:[
+      {label:'A vs B',data:scatter,backgroundColor:'rgba(0,212,255,0.25)',pointRadius:2.5,pointBorderWidth:0},
+      {label:`Fit: A = ${alphaH.toFixed(2)} + ${betaH.toFixed(3)}xB`,
+        data:[{x:bMin,y:alphaH+betaH*bMin},{x:bMax,y:alphaH+betaH*bMax}],
+        type:'line',borderColor:CC.red,backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0},
+    ]},
+    options:{...baseOpts(),scales:{x:{grid:{color:CC.muted},title:{display:true,text:'B Price',color:'#4e6380'}},y:{grid:{color:CC.muted},title:{display:true,text:'A Price',color:'#4e6380'}}}},
+  });
+  document.getElementById('olsStats').innerHTML=chips([
+    {l:'alpha hat',v:alphaH.toFixed(4),cls:'acc'},{l:'beta hat',v:betaH.toFixed(4),cls:'acc'},
+    {l:'True beta',v:(cfg.TRUE_BETA||1.4).toFixed(2),cls:'yel'},
+    {l:'Beta error',v:((betaH-(cfg.TRUE_BETA||1.4))*100).toFixed(2)+'%',cls:'neg'},
+    {l:'R squared',v:r2.toFixed(4),cls:'pos'},
+  ]);
+  showViz(2);
+}
+
+function step3(){
+  const{residuals}=pipeData;const n=residuals.length;
+  const arr=Array.from(residuals);
+  const mu=mean(arr),sg=std(arr);
+  const labels=Array.from({length:n},(_,i)=>i);
+  setOut(3,`Spread mean=${mu.toFixed(4)}  std=${sg.toFixed(4)}  min=${Math.min(...arr).toFixed(3)}  max=${Math.max(...arr).toFixed(3)}`);
+  dChart('spreadChart');
+  charts['spreadChart']=new Chart(document.getElementById('spreadChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Spread',data:arr,borderColor:CC.green,backgroundColor:'rgba(0,229,160,0.06)',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3},
+      {label:'Mean',data:new Array(n).fill(mu),borderColor:CC.yellow,borderWidth:1.2,borderDash:[6,4],pointRadius:0},
+      {label:'+1sig',data:new Array(n).fill(mu+sg),borderColor:'rgba(255,77,109,0.45)',borderWidth:1,borderDash:[3,6],pointRadius:0},
+      {label:'-1sig',data:new Array(n).fill(mu-sg),borderColor:'rgba(255,77,109,0.45)',borderWidth:1,borderDash:[3,6],pointRadius:0},
+    ]},
+    options:{...baseOpts()},
+  });
+  document.getElementById('spreadStats').innerHTML=chips([
+    {l:'Mean',v:mu.toFixed(4),cls:'acc'},{l:'Std Dev',v:sg.toFixed(4)},
+    {l:'Min',v:Math.min(...arr).toFixed(3),cls:'neg'},{l:'Max',v:Math.max(...arr).toFixed(3),cls:'pos'},
+    {l:'Stationary',v:sg<2.5?'Yes':'Check',cls:sg<2.5?'pos':'yel'},
+  ]);
+  showViz(3);
+}
+
+function step4(){
+  const{residuals,cfg}=pipeData;
+  const z=rollingZscore(residuals,60);pipeData.z=z;
+  const n=z.length;const arr=Array.from(z);
+  const entry=cfg.ENTRY_Z||1.8,stop=cfg.STOP_Z||3.5;
+  const labels=Array.from({length:n},(_,i)=>i);
+  setOut(4,`Z-score: min=${Math.min(...arr).toFixed(3)}  max=${Math.max(...arr).toFixed(3)}  bars|z|>entry=${arr.filter(v=>Math.abs(v)>entry).length}`);
+  dChart('zscoreChart');
+  charts['zscoreChart']=new Chart(document.getElementById('zscoreChart'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Z-Score',data:arr,borderColor:CC.accent2,backgroundColor:'rgba(124,58,237,0.07)',borderWidth:1.5,pointRadius:0,fill:true,tension:0.3},
+      {label:`+Entry(${entry})`,data:new Array(n).fill(entry),borderColor:CC.green,borderWidth:1.2,borderDash:[5,5],pointRadius:0},
+      {label:`-Entry`,data:new Array(n).fill(-entry),borderColor:CC.green,borderWidth:1.2,borderDash:[5,5],pointRadius:0},
+      {label:`+Stop(${stop})`,data:new Array(n).fill(stop),borderColor:CC.red,borderWidth:1,borderDash:[3,7],pointRadius:0},
+      {label:`-Stop`,data:new Array(n).fill(-stop),borderColor:CC.red,borderWidth:1,borderDash:[3,7],pointRadius:0},
+    ]},
+    options:{...baseOpts()},
+  });
+  document.getElementById('zStats').innerHTML=chips([
+    {l:'Min Z',v:Math.min(...arr).toFixed(3),cls:'neg'},{l:'Max Z',v:Math.max(...arr).toFixed(3),cls:'pos'},
+    {l:`Bars |z|>${entry}`,v:arr.filter(v=>Math.abs(v)>entry).length,cls:'yel'},
+    {l:`Bars |z|>${stop}`,v:arr.filter(v=>Math.abs(v)>stop).length,cls:'neg'},
+  ]);
+  showViz(4);
+}
+
+function step5(){
+  const{z,cfg}=pipeData;
+  const pos=generateSignals(z,cfg.ENTRY_Z||1.8,cfg.EXIT_Z||0.4,cfg.STOP_Z||3.5);
+  pipeData.pos=pos;
+  const n=z.length,arr=Array.from(z);
+  const longs=Array.from(pos).filter(v=>v===1).length;
+  const shorts=Array.from(pos).filter(v=>v===-1).length;
+  const active=longs+shorts;
+  setOut(5,`Long: ${longs} bars  Short: ${shorts} bars  Flat: ${n-active} bars  Active: ${((active/n)*100).toFixed(1)}%`);
+  const labels=Array.from({length:n},(_,i)=>i);
+  const bg=arr.map((_,i)=>pos[i]===1?'rgba(0,229,160,0.38)':pos[i]===-1?'rgba(255,77,109,0.38)':'rgba(124,58,237,0.14)');
+  dChart('signalChart');
+  charts['signalChart']=new Chart(document.getElementById('signalChart'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Z (green=long red=short)',data:arr,backgroundColor:bg,borderWidth:0,barPercentage:1,categoryPercentage:1},
+      {label:`Entry ±${cfg.ENTRY_Z||1.8}`,data:new Array(n).fill(cfg.ENTRY_Z||1.8),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[5,4],pointRadius:0},
+      {label:' ',data:new Array(n).fill(-(cfg.ENTRY_Z||1.8)),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[5,4],pointRadius:0},
+    ]},
+    options:{...baseOpts(),scales:{x:{grid:{color:'transparent'},ticks:{maxTicksLimit:8}},y:{grid:{color:CC.muted}}}},
+  });
+  document.getElementById('sigStats').innerHTML=chips([
+    {l:'Long bars',v:longs,cls:'pos'},{l:'Short bars',v:shorts,cls:'neg'},
+    {l:'Flat bars',v:n-active},{l:'% Active',v:((active/n)*100).toFixed(1)+'%',cls:'yel'},
+  ]);
+  showViz(5);
+}
+
+function step6(){
+  const{A,B,alphaH,betaH,cfg,z,pos}=pipeData;
+  const{aNow,bNow,sNow,zNow,action}=predictCurrent(A,B,alphaH,betaH,cfg.ENTRY_Z||1.8,cfg.EXIT_Z||0.4,cfg.STOP_Z||3.5);
+  setOut(6,`A=${aNow.toFixed(3)}  B=${bNow.toFixed(3)}  Spread=${sNow.toFixed(4)}  Z=${zNow.toFixed(4)}  --> ${action}`);
+
+  // Gauge
+  const gv=document.getElementById('gaugeVal'),gs=document.getElementById('gaugeSig');
+  gv.textContent=zNow.toFixed(3);
+  gv.style.color=action==='LONG SPREAD'?CC.green:action==='SHORT SPREAD'?CC.red:CC.yellow;
+  const sigCls=action==='LONG SPREAD'?'sig-long':action==='SHORT SPREAD'?'sig-short':'sig-none';
+  gs.className=`gauge-signal ${sigCls}`;gs.textContent=action==='STOP-LOSS'?'STOP-LOSS':action;
+
+  // Flow diagram
+  const entryZ=cfg.ENTRY_Z||1.8;
+  document.getElementById('predFlow').innerHTML=`
+    <div class="flow-row">
+      <div class="flow-box"><div class="flow-box-label">Price A (latest)</div><div class="flow-box-val">${aNow.toFixed(3)}</div><div class="flow-box-sub">Last simulated close</div></div>
+      <div class="flow-op">&#43;</div>
+      <div class="flow-box"><div class="flow-box-label">Price B (latest)</div><div class="flow-box-val">${bNow.toFixed(3)}</div><div class="flow-box-sub">Last simulated close</div></div>
+    </div>
+    <div class="flow-arrow-v">&#8595; Apply OLS: Spread = A &#8722; (&#945; + &#946;&#183;B)</div>
+    <div class="flow-row">
+      <div class="flow-box ${Math.abs(sNow)>1.5?'highlight':''}">
+        <div class="flow-box-label">Current Spread</div>
+        <div class="flow-box-val" style="color:${Math.abs(sNow)>2?CC.yellow:CC.text}">${sNow.toFixed(4)}</div>
+        <div class="flow-box-sub">&#945;=${alphaH.toFixed(3)}  &#946;=${betaH.toFixed(3)}</div>
+      </div>
+    </div>
+    <div class="flow-arrow-v">&#8595; Rolling Z-Score (60-day window)</div>
+    <div class="flow-row">
+      <div class="flow-box highlight">
+        <div class="flow-box-label">Z-Score Now</div>
+        <div class="flow-box-val" style="color:${Math.abs(zNow)>entryZ?CC.red:CC.accent}">${zNow.toFixed(4)}</div>
+        <div class="flow-box-sub">Entry threshold: &#177;${entryZ}</div>
+      </div>
+    </div>
+    <div class="flow-arrow-v">&#8595; Signal decision logic</div>
+    <div class="flow-row">
+      <div class="flow-box highlight">
+        <div class="flow-box-label">Decision</div>
+        <div class="flow-box-val" style="font-size:14px;color:${action==='LONG SPREAD'?CC.green:action==='SHORT SPREAD'?CC.red:CC.yellow}">${action}</div>
+        <div class="flow-box-sub">${
+          action==='LONG SPREAD'?'Buy A, Sell '+betaH.toFixed(2)+'x B':
+          action==='SHORT SPREAD'?'Sell A, Buy '+betaH.toFixed(2)+'x B':
+          action==='STOP-LOSS'?'|z| exceeded stop — force exit':
+          '|z| within neutral band — no trade'
+        }</div>
+      </div>
+    </div>
+  `;
+
+  // Recent Z bar chart
+  const tail=80;
+  const zTail=Array.from(z).slice(-tail);
+  const posTail=Array.from(pos).slice(-tail);
+  const bg2=zTail.map((_,i)=>{
+    if(i===zTail.length-1) return CC.yellow;
+    return posTail[i]===1?'rgba(0,229,160,0.42)':posTail[i]===-1?'rgba(255,77,109,0.42)':'rgba(124,58,237,0.2)';
+  });
+  dChart('recentZChart');
+  charts['recentZChart']=new Chart(document.getElementById('recentZChart'),{
+    type:'bar',
+    data:{labels:zTail.map((_,i)=>i),datasets:[
+      {label:`Last ${tail} bars  (yellow = NOW)`,data:zTail,backgroundColor:bg2,borderWidth:0,barPercentage:1,categoryPercentage:1},
+      {label:'Entry',data:new Array(tail).fill(cfg.ENTRY_Z||1.8),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[4,4],pointRadius:0},
+      {label:'-Entry',data:new Array(tail).fill(-(cfg.ENTRY_Z||1.8)),type:'line',borderColor:CC.green,borderWidth:1.5,borderDash:[4,4],pointRadius:0},
+    ]},
+    options:{...baseOpts(),plugins:{legend:{labels:{boxWidth:8,padding:10,font:{size:9}}},tooltip:{...TT}},
+      scales:{x:{grid:{color:'transparent'},ticks:{maxTicksLimit:6}},y:{grid:{color:CC.muted}}}},
+  });
+
+  // Breadcrumb pipeline
+  const aColor=action==='LONG SPREAD'?CC.green:action==='SHORT SPREAD'?CC.red:CC.yellow;
+  document.getElementById('predSteps').innerHTML=`
+    <span class="pred-step lit">A=${aNow.toFixed(2)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">B=${bNow.toFixed(2)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">OLS(&#945;=${alphaH.toFixed(2)}, &#946;=${betaH.toFixed(3)})</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">Spread=${sNow.toFixed(3)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit">Z=${zNow.toFixed(3)}</span>
+    <span class="pred-arrow">&#8594;</span>
+    <span class="pred-step lit" style="border-color:${aColor};color:${aColor}">${action}</span>
+  `;
+  showViz(6);
+}
+</script>
+</body>
+</html>
